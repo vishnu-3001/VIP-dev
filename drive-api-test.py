@@ -5,7 +5,6 @@ from googleapiclient.discovery import build
 SCOPES=['https://www.googleapis.com/auth/drive']
 
 def main():
-    file_name=''
     creds=None
     try:
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
@@ -22,23 +21,21 @@ def main():
         fields='files(id, name,version)'
     ).execute()
     items=results.get('files', [])
-    # results = service.files().list( fields="files(id, name)").execute()
-    # items = results.get('files', [])
     if not items:
         print('No files found.')
     else:
-        # print(items)
-        file_id='1qNTGWV6uzJby2UHpto3cS7OHuY4_bIyYYEFMzqdkUic'
-        print(f"found file '{file_name} with id: {file_id}'")
+        file_id='14r5KXdj3KgvM4o4P7vQz3jQVUeWLJbKyU1NlE4-Yphc'
         revisions=service.revisions().list(fileId=file_id,fields='revisions(id, modifiedTime, lastModifyingUser(displayName, emailAddress))').execute()
+        accumulated_data={}
         for revision in revisions.get('revisions', []):
-            print(revision)
-            # print(f"Revision ID: {revision['id']}")
-            # print(f"Modified Time: {revision['modifiedTime']}")
             # print(revision)
-            # print(f"Last Modifier: {revision['lastModifyingUser']['displayName']}")
-        # print('Files:')
-        # for item in items:
-        #     print(f"{item['name']}  ({item['version']})")
+            email=revision['lastModifyingUser']['displayName']
+            print(email)
+            modifiedTime=revision['modifiedTime']
+            print(modifiedTime)
+            if email not in accumulated_data:
+                accumulated_data[email]=[]
+            accumulated_data[email].append(modifiedTime)
+        print(accumulated_data)
 if __name__ == '__main__':
     main()
