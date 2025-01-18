@@ -2,8 +2,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from fastapi import HTTPException
+from googleapiclient.http import MediaIoBaseDownload
+import io
 import logging
-import httpx
 import os
 
 
@@ -29,39 +30,19 @@ def fetch_drive_data():
         logging.error(f"Failed to initialize Google Drive API service: {e}")
         raise HTTPException(status_code=500, detail="Google Drive API initialization failed.")
 
-async def get_log_data(file_id: str):
+
+def download(service, mime_type,file_id, destination_path):
     try:
-        service = fetch_drive_data()
-        revisions = service.revisions().list(
-            fileId=file_id,
-            fields="revisions(id,modifiedTime,lastModifyingUser(displayName,emailAddress))"
-        ).execute()
-
-        if not revisions or "revisions" not in revisions:
-            raise HTTPException(status_code=404, detail=f"No revisions found for file ID: {file_id}")
-
-        accumulated_data = {}
-        for revision in revisions.get("revisions", []):
-            email = revision.get("lastModifyingUser", {}).get("displayName", "unknown")
-            modified_time = revision.get("modifiedTime")
-            if not modified_time:
-                continue
-            accumulated_data.setdefault(email, []).append(modified_time)
-
-        request_data = {"log_entries": accumulated_data}
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://localhost:8000/api/v1/analysis/", json=request_data)
-
-            if response.status_code != 200:
-                logging.error(f"Collaboration endpoint returned error: {response.status_code}, {response.text}")
-                raise HTTPException(status_code=response.status_code, detail=response.text)
-
-            collaboration_result = response.json()
-            return collaboration_result
-
-    except HTTPException as http_err:
-        logging.error(f"HTTP error: {http_err.detail}")
-        raise
+        request = service.files().export(fileId=file_id, mimeType=mime_type)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            print(f"Export progress: {int(status.progress() * 100)}%")
+        with open(destination_path, "wb") as f:
+            fh.seek(0)
+            f.write(fh.read())
+        print(f"File exported and saved successfully to {destination_path}")
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
+        print(f"An error occurred during export: {e}")
