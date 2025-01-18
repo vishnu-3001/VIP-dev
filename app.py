@@ -4,11 +4,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from langchain.prompts import PromptTemplate
-from langserve import add_routes
 from langchain.chains import LLMChain
-from langchain_core.runnables import Runnable
-# from langserve import Runnable
+from langchain.prompts import PromptTemplate
 import uvicorn
 import httpx
 import os
@@ -45,22 +42,22 @@ def fetch_drive_data():
 def grade_collaboration():
     llm = ChatOpenAI(model="gpt-3.5-turbo")
     prompt_template = """
-    You are a data analyst specialized in team dynamics. Analyze the following shared log data to evaluate team collaboration and provide an effectiveness rating out of 10.
+    You are a team collaboration analyst. Use the log data below to:
 
-    Here is the data of team members and their corresponding timestamps:
-
-    {log_entries}
-
-    Consider the following:
-    Participation Balance: Are contributions evenly distributed among team members?
-    Consistency: Are contributions spread consistently over time or concentrated in specific periods?
-    Engagement Trends: Are all members actively contributing, or are there signs of disengagement?
-    Collaboration Timing: Do timestamps suggest synchronous (real-time) or asynchronous work, and how does this affect effectiveness?
-    Workload Distribution: Is any member contributing disproportionately more or less than others?
-    Deliverables:
-    A rating out of 10 with reasoning.
-    Key insights from the analysis.
-    Recommendations for improving collaboration.
+        Assign a collaboration score (1-10) based on defined criteria.
+        Provide key observations about team dynamics.
+        Suggest specific actions for improvement.
+        {log_entries}
+        Criteria for Scoring:
+        Participation Balance: Are contributions evenly distributed?
+        Consistency: Are contributions spread over time or clustered?
+        Engagement: Do all members contribute actively?
+        Collaboration Timing: Is the work synchronous or asynchronous?
+        Workload Distribution: Are contributions proportionate?
+        Constraints:
+        Always base the score on the five criteria provided.
+        Avoid assumptions beyond the given data.
+        Use precise, concise language for insights and recommendations.
     """
     prompt = PromptTemplate(input_variables=["log_entries"], template=prompt_template)
     chain = LLMChain(prompt=prompt, llm=llm)
