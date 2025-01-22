@@ -3,36 +3,16 @@ from fastapi import HTTPException
 import httpx
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
 
 from app.services.drive_services import fetch_drive_data
-from utils import extract_headings
+from utils import *
 
 load_dotenv()
-
+llm=model()
 async def analyze_collaboration(log_entries: dict):
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    llm = ChatOpenAI(model="gpt-3.5-turbo",api_key=OPENAI_API_KEY)
-    prompt_template = """
-    You are a team collaboration analyst. Use the log data below to:
-
-        Assign a collaboration score (1-10) based on defined criteria.
-        Provide key observations about team dynamics.
-        Suggest specific actions for improvement.
-        {log_entries}
-        Criteria for Scoring:
-        Participation Balance: Are contributions evenly distributed?
-        Consistency: Are contributions spread over time or clustered?
-        Engagement: Do all members contribute actively?
-        Collaboration Timing: Is the work synchronous or asynchronous?
-        Workload Distribution: Are contributions proportionate?
-        Constraints:
-        Always base the score on the five criteria provided.
-        Avoid assumptions beyond the given data.
-        Use precise, concise language for insights and recommendations.
-    """
+    prompt_template=collaboration_prompt(log_entries)
     prompt = PromptTemplate(input_variables=["log_entries"], template=prompt_template)
     chain = LLMChain(prompt=prompt, llm=llm)
     log_entries_str = "\n".join([f"{k}: {', '.join(v)}" for k, v in log_entries.items()])
@@ -40,24 +20,7 @@ async def analyze_collaboration(log_entries: dict):
 
 
 async def analyze_headings(headings):
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    llm = ChatOpenAI(model="gpt-3.5-turbo",api_key=OPENAI_API_KEY)
-    prompt_template = """
-    Evaluate the format of a research paper based on its headings and provide a score out of 5. Use these criteria:
-        1. **Coverage**: Do the headings include standard sections (Abstract, Introduction, Methodology, Results, Discussion, Conclusion, References)?
-2. **Order**: Are the headings logically arranged?
-3. **Clarity**: Are the headings clear and professional?
-4. **Consistency**: Is the formatting uniform (e.g., capitalization, numbering)?
-
-        {headings}
-
-Provide a score (1-5):
-- 5 = Excellent: Meets all criteria.
-- 4 = Good: Minor issues.
-- 3 = Average: Noticeable gaps.
-- 2 = Poor: Significant issues.
-- 1 = Very Poor: Fails most criteria.
-    """
+    prompt_template=format_prompt(headings)
     prompt = PromptTemplate(input_variables=["headings"], template=prompt_template)
     chain = LLMChain(prompt=prompt, llm=llm)
     headings_str=", ".join(headings)
@@ -104,14 +67,19 @@ async def analyze_log_data(file_id: str):
 async def analyze_format():
     try:
         async with httpx.AsyncClient() as client:
-            response=await client.get("http://localhost:8000/api/v1/drive/download")
-            if response.status_code!=200:
-                logging.error(f"Download of the file failed : {response.status_code},{response.text}")
-                raise HTTPException(status_code=response.status_code,detail=response.text)
+            response = await client.get("http://localhost:8000/api/v1/drive/download")
+            if response.status_code != 200:
+                logging.error(f"Download of the file failed: {response.status_code}, {response.text}")
+                raise HTTPException(status_code=response.status_code, detail=response.text)
         current_dir = os.path.dirname(__file__)
-        document_path = os.path.abspath(os.path.join(current_dir, "..", "..", "utils","downloaded_file.pdf"))
-        headings=extract_headings(document_path)
-        return analyze_headings(headings)
+        document_path = os.path.abspath(os.path.join(current_dir, "..", "..", "utils", "downloaded_file.pdf"))
+        if not os.path.exists(document_path):
+            logging.error(f"File not found: {document_path}")
+            raise HTTPException(status_code=404, detail="Downloaded file not found")
+        headings = extract_headings(document_path)
+        logging.info(f"Extracted headings: {headings}")
+        result = await analyze_headings(headings)  
+        return result
     except HTTPException as http_err:
         logging.error(f"HTTP error: {http_err.detail}")
         raise
