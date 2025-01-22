@@ -13,15 +13,15 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 def fetch_drive_data():
     creds = None
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    token_path = os.path.join(current_dir, 'token.json')
-    credentials_path = os.path.join(current_dir, 'credentials.json')
+    token_path = os.path.join(current_dir, '..','Auth','token.json')
+    credentials_path = os.path.join(current_dir, '..','Auth','credentials.json')
     try:
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     except Exception as e:
         logging.warning(f"Token file error: {e}. Starting OAuth flow.")
         flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
         creds = flow.run_local_server(port=55342)
-        with open('token.json', 'w') as token:
+        with open(token_path, 'w') as token:
             token.write(creds.to_json())
     try:
         service = build('drive', 'v3', credentials=creds)
