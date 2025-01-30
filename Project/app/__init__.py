@@ -5,11 +5,9 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Setup: Initialize database connection pool
     init_db()
     print("Database connection pool initialized.")
     yield
-    # Teardown: Close the connection pool
     close_pool()
     print("Database connection pool closed.")
 

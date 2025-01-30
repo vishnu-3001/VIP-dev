@@ -1,10 +1,10 @@
 import logging
 from fastapi import HTTPException
 import httpx
-from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
+from langchain.schema import AIMessage
 
 from app.services.drive_services import fetch_drive_data
 from utils import *
@@ -14,17 +14,23 @@ llm=model()
 async def analyze_collaboration(log_entries: dict):
     prompt_template=collaboration_prompt(log_entries)
     prompt = PromptTemplate(input_variables=["log_entries"], template=prompt_template)
-    chain = LLMChain(prompt=prompt, llm=llm)
+    chain = prompt|llm
     log_entries_str = "\n".join([f"{k}: {', '.join(v)}" for k, v in log_entries.items()])
-    return await chain.arun({"log_entries": log_entries_str})
+    analysis= await chain.ainvoke({"log_entries": log_entries_str})
+    if isinstance(analysis, AIMessage): 
+            summary = analysis.content
+    return summary
 
 
 async def analyze_headings(headings):
     prompt_template=format_prompt(headings)
     prompt = PromptTemplate(input_variables=["headings"], template=prompt_template)
-    chain = LLMChain(prompt=prompt, llm=llm)
+    chain=prompt|llm
     headings_str=", ".join(headings)
-    return await chain.arun({"headings": headings_str})
+    analysis= await chain.ainvoke({"headings": headings_str})
+    if isinstance(analysis, AIMessage): 
+            summary = analysis.content
+    return summary
 
 async def analyze_log_data(file_id: str):
     try:
@@ -64,10 +70,10 @@ async def analyze_log_data(file_id: str):
         raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
     
 
-async def analyze_format():
+async def analyze_format(file_id:str):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8000/api/v1/drive/download")
+            response = await client.get(f"http://localhost:8000/api/v1/drive/download?file_id={file_id}")
             if response.status_code != 200:
                 logging.error(f"Download of the file failed: {response.status_code}, {response.text}")
                 raise HTTPException(status_code=response.status_code, detail=response.text)
@@ -77,6 +83,7 @@ async def analyze_format():
             logging.error(f"File not found: {document_path}")
             raise HTTPException(status_code=404, detail="Downloaded file not found")
         headings = extract_headings(document_path)
+        print(headings)
         logging.info(f"Extracted headings: {headings}")
         result = await analyze_headings(headings)  
         return result
