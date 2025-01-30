@@ -4,10 +4,10 @@ import os
 
 drive_router = APIRouter()
 @drive_router.get("/download")
-async def download_file():
+async def download_file(file_id:str):
     try:
         service = fetch_drive_data()
-        file_id="19wgTUbzxagT7O5Ig2Etj3m1vF9lCk9aBUchCfTc0ZHA"
+        file_id=file_id
         file_name="downloaded_file.pdf"
         current_dir = os.path.dirname(__file__)
         utils_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "utils"))

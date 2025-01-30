@@ -7,3 +7,5 @@ uvicorn[standard]
 httpx
 postgreSQL 15
 psycopg2
+pymupdf
+numpy

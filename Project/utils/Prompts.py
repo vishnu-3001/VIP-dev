@@ -1,6 +1,6 @@
 def collaboration_prompt(log_entries:dict):
     prompt= """
-    You are a team collaboration analyst. Using the log data below, evaluate team performance:
+    You are a team collaboration analyst. Using the log data below, evaluate team performance dont hallucinate, dont assume, dont make up things:
 1. Assign a collaboration score (1-10) based on the criteria.
 2. Provide key observations about team dynamics.
 3. Recommend specific actions for improvement.
@@ -21,7 +21,7 @@ Constraints:
     return prompt
 def format_prompt(headings):
     prompt="""
-    Evaluate the format of a research paper based on its headings and provide a score out of 5. Use these criteria:
+    Evaluate the format of a research paper based on its headings and provide a score out of 5. Use these criteria dont hallucinate, dont assume, dont make up things:
     1. Coverage**: Do the headings include standard sections (Abstract, Introduction, Methodology, Results, Discussion, Conclusion, References)?
     2. Order**: Are the headings logically arranged?
     3. Clarity**: Are the headings clear and professional?
@@ -36,4 +36,11 @@ def format_prompt(headings):
     - 2 = Poor: Significant issues.
     - 1 = Very Poor: Fails most criteria.
     """
+    return prompt
+
+def summary_prompt(text):
+    prompt="""
+summarize the text to 3-5 sentences:
+{text}
+"""
     return prompt

@@ -25,9 +25,9 @@ async def get_logs(file_id: str):
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
 @analysis_router.get("/format")
-async def get_format_analysis():
+async def get_format_analysis(file_id:str):
     try:
-        response=await analyze_format()
+        response=await analyze_format(file_id)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Format analysis failed: {e}")

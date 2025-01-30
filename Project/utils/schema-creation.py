@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS Users (
 CREATE TABLE documents (
     document_id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
+    content_summary TEXT NULL,
     content_vector DOUBLE PRECISION[] NOT NULL
 );
 
