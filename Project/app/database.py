@@ -10,8 +10,6 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 max_conn=os.getenv("DB_POOL_MAX")
 min_conn=os.getenv("DB_POOL_MIN")
-
-# Initialize connection pool
 db_pool = None
 
 def init_db():
@@ -19,7 +17,7 @@ def init_db():
     if not db_pool:
         db_pool = psycopg2.pool.SimpleConnectionPool(
             minconn=min_conn,
-            maxconn=max_conn,  # Adjust based on your app's concurrency
+            maxconn=max_conn,  
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
