@@ -1,22 +1,23 @@
 import requests
-def get_collaboration_analysis(file_id: str):
-    response = requests.get(f"http://localhost:8000/api/v1/analysis/logs?file_id={file_id}")
+def downloadDocument(file_id):
+    url = f"http://localhost:8000/api/v1/drive/download?file_id={file_id}"
+    response = requests.get(url)
+    try:
+        return response.json()  
+    except requests.exceptions.JSONDecodeError:
+        print("Error: Response is not in JSON format.")
+        return None
+def processText():
+    url=f"http://localhost:8000/api/v1/extract/process"
+    response=requests.get(url)
     if response.status_code == 200:
         return response.json()
     return {"error": "Failed to fetch logs", "status": response.status_code}
-def get_format_analysis(file_id:str):
-    response=requests.get(f"http://localhost:8000/api/v1/analysis/format?file_id={file_id}")
-    if response.status_code==200:
-        return response.json()
-    return {"error":"Failed to download the file", "status":response.status_code}
-def get_summary():
-    response=requests.get(f"http://localhost:8000/api/v1/content/summary")
-    if response.status_code==200:
-        return response.json()
-    return {"error":"Failed to get summary","status":response.status_code}
 
 if __name__ == "__main__":
-    file_id = "1T5IBAzS2_6RrivL-hIsKeA2JQh65a3WDrZXconrEYcY"
-    print(get_collaboration_analysis(file_id))
-    print(get_format_analysis(file_id))
-    print(get_summary())
+    # file_id = "1ptGJPgCJj0sGWRMtQXIgVcOBaJ3GP3hgs9xwzPFFqr8"
+    # file_data=downloadDocument(file_id)
+    processText()
+    
+
+    

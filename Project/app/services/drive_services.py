@@ -31,7 +31,7 @@ def fetch_drive_data():
         raise HTTPException(status_code=500, detail="Google Drive API initialization failed.")
 
 
-def download(service, mime_type,file_id, destination_path):
+def download(service, mime_type, file_id, destination_path):
     try:
         request = service.files().export(fileId=file_id, mimeType=mime_type)
         fh = io.BytesIO()
@@ -44,5 +44,7 @@ def download(service, mime_type,file_id, destination_path):
             fh.seek(0)
             f.write(fh.read())
         print(f"File exported and saved successfully to {destination_path}")
+        return True  
     except Exception as e:
         print(f"An error occurred during export: {e}")
+        return False  
