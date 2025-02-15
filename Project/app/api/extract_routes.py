@@ -5,6 +5,7 @@ extract_router = APIRouter()
 @extract_router.get("/process")
 async def process():
     try:
+        print("hello")
         response=await extract()
         return response
     except Exception as e:
