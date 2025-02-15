@@ -93,6 +93,10 @@ async def analyze_format(file_id:str):
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
+    
+
+
+
             
 
 
