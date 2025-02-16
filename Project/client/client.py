@@ -14,10 +14,27 @@ def processText():
         return response.json()
     return {"error": "Failed to fetch logs", "status": response.status_code}
 
+def dates_analysis():
+    url=f"http://localhost:8000/api/v1/analysis/format"
+    response=requests.get(url)
+    if response.status_code==200:
+        return response.json()
+    return {"error":"Failed to analyze dates","status":response.status_code}
+
+def collaborate(fileid: str):
+    url = f"http://localhost:8000/api/v1/analysis/logs/{fileid}"  # ✅ Path parameter
+    response = requests.get(url)  
+    if response.status_code == 200:
+        return response.json()
+    return {"error": "Failed to analyze logs"}
+
+
 if __name__ == "__main__":
-    # file_id = "1ptGJPgCJj0sGWRMtQXIgVcOBaJ3GP3hgs9xwzPFFqr8"
+    file_id = "1hDv1qgU-fhgGQpv3J9_YtCFXE4gJZILQRt4ZSvEBr9M"
     # file_data=downloadDocument(file_id)
-    processText()
+    # processText()
+    # dates_analysis()
+    print(collaborate(file_id))
     
 
     

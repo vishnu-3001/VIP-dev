@@ -1,35 +1,25 @@
 from fastapi import APIRouter, HTTPException
-from app.services.analysis_service import analyze_collaboration,analyze_log_data,analyze_format
+from app.services.analysis_service import analyze_format,analyze_logs
+import logging
 
 analysis_router = APIRouter()
-@analysis_router.get("/logs")
-async def get_logs(file_id: str):
+
+@analysis_router.get("/logs/{file_id}")  # ✅ file_id is part of the URL path
+async def analyze_logs_method(file_id: str):
     try:
-        log_data = await analyze_log_data(file_id)
-        return log_data
+        return await analyze_logs(file_id)  # ✅ Call the service function
     except HTTPException as http_err:
         raise http_err
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-@analysis_router.post("/collaboration")
-async def analyze_collaboration_route(request: dict):
-    log_entries = request.get("log_entries", {})
-    if not log_entries:
-        raise HTTPException(status_code=400, detail="log_entries is required.")
-
-    try:
-        result = await analyze_collaboration(log_entries)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Collaboration analysis failed: {e}")
-
-
+        logging.error(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing logs: {str(e)}")
 @analysis_router.get("/format")
-async def get_format_analysis(file_id:str):
+async def get_format_analysis():
     try:
-        response=await analyze_format(file_id)
+        response=await analyze_format()
         return response
     except Exception as e:
+        logging.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=f"Format analysis failed: {e}")
 
 
