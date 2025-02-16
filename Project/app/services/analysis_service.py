@@ -1,6 +1,7 @@
 import logging
 from fastapi import HTTPException
 import httpx
+import json
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
@@ -11,28 +12,8 @@ from utils import *
 
 load_dotenv()
 llm=model()
-async def analyze_collaboration(log_entries: dict):
-    prompt_template=collaboration_prompt(log_entries)
-    prompt = PromptTemplate(input_variables=["log_entries"], template=prompt_template)
-    chain = prompt|llm
-    log_entries_str = "\n".join([f"{k}: {', '.join(v)}" for k, v in log_entries.items()])
-    analysis= await chain.ainvoke({"log_entries": log_entries_str})
-    if isinstance(analysis, AIMessage): 
-            summary = analysis.content
-    return summary
-
-
-async def analyze_headings(headings):
-    prompt_template=format_prompt(headings)
-    prompt = PromptTemplate(input_variables=["headings"], template=prompt_template)
-    chain=prompt|llm
-    headings_str=", ".join(headings)
-    analysis= await chain.ainvoke({"headings": headings_str})
-    if isinstance(analysis, AIMessage): 
-            summary = analysis.content
-    return summary
-
-async def analyze_log_data(file_id: str):
+#code for analyzing collaboration
+async def process_log_data(file_id: str):
     try:
         service = fetch_drive_data()
         revisions = service.revisions().list(
@@ -51,41 +32,61 @@ async def analyze_log_data(file_id: str):
                 continue
             accumulated_data.setdefault(email, []).append(modified_time)
 
-        request_data = {"log_entries": accumulated_data}
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://localhost:8000/api/v1/analysis/collaboration", json=request_data)
+        return accumulated_data  
+    except HTTPException as http_err:
+        logging.error(f"HTTP error: {http_err.detail}")
+        raise http_err 
+    except Exception as e:
+        logging.error(f"Unexpected error in processing log data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
+async def analyze_logs(file_id: str):
+    try:
+        log_entries = await process_log_data(file_id)
+        timestamps = list(log_entries.values())[0] if log_entries else []
+        log_entries_str = "\n".join(timestamps)
+        prompt_template = collaboration_prompt(timestamps)  
+        prompt = PromptTemplate(input_variables=["log_entries"], template=prompt_template)
+        chain = prompt | llm
+        analysis = await chain.ainvoke({"log_entries": log_entries_str})
+        summary = analysis.content if isinstance(analysis, AIMessage) else analysis
 
-            if response.status_code != 200:
-                logging.error(f"Collaboration endpoint returned error: {response.status_code}, {response.text}")
-                raise HTTPException(status_code=response.status_code, detail=response.text)
-
-            collaboration_result = response.json()
-            return collaboration_result
+        return {"collaboration_analysis": summary}
 
     except HTTPException as http_err:
         logging.error(f"HTTP error: {http_err.detail}")
-        raise
+        raise http_err
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
-    
+        raise HTTPException(status_code=500, detail=f"Error processing full analysis: {str(e)}")
 
-async def analyze_format(file_id:str):
+
+
+#code for analyzing dates
+async def analyze_dates(dates):
+    prompt_template=format_prompt(dates)
+    prompt = PromptTemplate(input_variables=["dates"], template=prompt_template)
+    chain=prompt|llm
+    analysis= await chain.ainvoke({"dates": dates})
+    if isinstance(analysis, AIMessage): 
+            summary = analysis.content
+    return summary    
+def load_normalized_dates():
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:8000/api/v1/drive/download?file_id={file_id}")
-            if response.status_code != 200:
-                logging.error(f"Download of the file failed: {response.status_code}, {response.text}")
-                raise HTTPException(status_code=response.status_code, detail=response.text)
-        current_dir = os.path.dirname(__file__)
-        document_path = os.path.abspath(os.path.join(current_dir, "..", "..", "utils", "downloaded_file.pdf"))
-        if not os.path.exists(document_path):
-            logging.error(f"File not found: {document_path}")
-            raise HTTPException(status_code=404, detail="Downloaded file not found")
-        headings = extract_headings(document_path)
-        print(headings)
-        logging.info(f"Extracted headings: {headings}")
-        result = await analyze_headings(headings)  
+        with open(dates_file_path, "r", encoding="utf-8") as json_file:
+            dates = json.load(json_file)
+            print(dates)
+            return dates
+    except FileNotFoundError:
+        print("Error: dates.json not found.")
+        return []
+    except json.JSONDecodeError:
+        print("Error: Could not decode JSON file.")
+        return []
+
+async def analyze_format():
+    try:
+        dates=load_normalized_dates()
+        result = await analyze_dates(dates)  
         return result
     except HTTPException as http_err:
         logging.error(f"HTTP error: {http_err.detail}")

@@ -2,6 +2,7 @@ import os
 import re
 import asyncio
 import pdfplumber
+import json
 from fastapi import  HTTPException
 from langchain_openai import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
@@ -15,9 +16,8 @@ index = get_index()
 embeddings_model = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 current_dir = os.path.dirname(__file__)
 utils_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "utils"))
+dates_json_path=os.path.abspath(os.path.join(utils_dir,"dates.json"))
 PDF_PATH = os.path.abspath(os.path.join(utils_dir, "download_file.pdf"))
-
-dates=[]
 
 date_pattern = re.compile(
     r'\b('
@@ -36,6 +36,7 @@ date_pattern = re.compile(
     r')\b'
 )
 
+
 async def extract_text_by_date(pdf_path):
     date_content_map = {}
     extracted_text = ""
@@ -44,6 +45,11 @@ async def extract_text_by_date(pdf_path):
             extracted_text += page.extract_text() + "\n"
     raw_dates = date_pattern.findall(extracted_text)
     normalized_dates = await normalize_dates(raw_dates)
+    try:
+        with open(dates_json_path,"w") as json_file:
+            json.dump(normalized_dates,json_file,indent=4)
+    except Exception as e:
+        print(f"Error while saving dates to json file: {e}")
     matches = list(date_pattern.finditer(extracted_text))
     positions = [match.start() for match in matches]
 
