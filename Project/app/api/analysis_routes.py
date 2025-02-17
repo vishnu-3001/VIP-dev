@@ -4,10 +4,10 @@ import logging
 
 analysis_router = APIRouter()
 
-@analysis_router.get("/logs/{file_id}")  # ✅ file_id is part of the URL path
+@analysis_router.get("/logs/{file_id}")  
 async def analyze_logs_method(file_id: str):
     try:
-        return await analyze_logs(file_id)  # ✅ Call the service function
+        return await analyze_logs(file_id)  
     except HTTPException as http_err:
         raise http_err
     except Exception as e:

@@ -7,8 +7,8 @@ def downloadDocument(file_id):
     except requests.exceptions.JSONDecodeError:
         print("Error: Response is not in JSON format.")
         return None
-def processText():
-    url=f"http://localhost:8000/api/v1/extract/process"
+def extract_dates():
+    url=f"http://localhost:8000/api/v1/extract/extractdates"
     response=requests.get(url)
     if response.status_code == 200:
         return response.json()
@@ -22,7 +22,7 @@ def dates_analysis():
     return {"error":"Failed to analyze dates","status":response.status_code}
 
 def collaborate(fileid: str):
-    url = f"http://localhost:8000/api/v1/analysis/logs/{fileid}"  # ✅ Path parameter
+    url = f"http://localhost:8000/api/v1/analysis/logs/{fileid}"  
     response = requests.get(url)  
     if response.status_code == 200:
         return response.json()
@@ -32,9 +32,9 @@ def collaborate(fileid: str):
 if __name__ == "__main__":
     file_id = "1hDv1qgU-fhgGQpv3J9_YtCFXE4gJZILQRt4ZSvEBr9M"
     # file_data=downloadDocument(file_id)
-    # processText()
-    # dates_analysis()
-    print(collaborate(file_id))
+    # extract_dates()
+    print(dates_analysis())
+    # print(collaborate(file_id))
     
 
     

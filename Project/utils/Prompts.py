@@ -64,9 +64,18 @@ Here is the array of dates:
 </Data>"""
     return prompt
 
-def summary_prompt(text):
-    prompt="""
-summarize the text to 3-5 sentences:
-{text}
-"""
-    return prompt
+def normalize_dates_prompt(dates):
+    formatted_dates = "\n".join([f"- {date}" for date in dates])  
+    prompt = f"""
+        Normalize the following dates into ISO format (YYYY-MM-DD):
+        {formatted_dates}
+        
+        Example Output:
+        Input: 2nd March 2025 → Output: 2025-03-02
+        Input: 04-05-25 → Output: 2025-05-04
+        
+        Provide ONLY an array of formatted dates without extra text.
+    """
+    return prompt.strip()  
+
+        
