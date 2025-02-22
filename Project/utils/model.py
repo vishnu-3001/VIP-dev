@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI,OpenAIEmbeddings
 import os
 
 
@@ -7,4 +7,5 @@ def model():
     llm = ChatOpenAI(model="gpt-4",api_key=OPENAI_API_KEY,temperature=0)
     return llm
 
-
+def embeddings_model():
+    return OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))

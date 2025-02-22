@@ -37,7 +37,7 @@ You are an expert in analyzing sequences and patterns in data. Your task is to a
 </System>
 
 <Task>
-Evaluate the given array of dates based on the following criteria:
+Evaluate the dates in given array of dates based on the following criteria:
 1. **Identify the predominant order**:
    - **Chronological (oldest to newest)**
    - **Reverse chronological (newest to oldest)**

@@ -2,6 +2,7 @@ import logging
 from fastapi import HTTPException
 import httpx
 import json
+import re
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
@@ -70,22 +71,36 @@ async def analyze_dates(dates):
     if isinstance(analysis, AIMessage): 
             summary = analysis.content
     return summary    
-def load_normalized_dates():
-    try:
-        with open(dates_file_path, "r", encoding="utf-8") as json_file:
-            dates = json.load(json_file)
-            print(dates)
-            return dates
-    except FileNotFoundError:
-        print("Error: dates.json not found.")
-        return []
-    except json.JSONDecodeError:
-        print("Error: Could not decode JSON file.")
-        return []
+date_pattern = re.compile(
+    r'\b('
+    r'\d{2}/\d{2}/\d{4}|'               
+    r'\d{2}/\d{2}/\d{2}|'                
+    r'\d{2}-\d{2}-\d{2}|'               
+    r'\d{2}-\d{2}-\d{4}|'               
+    r'\d{2}\.\d{2}\.\d{2}|'               
+    r'\d{2}\.\d{2}\.\d{4}|'               
+    r'\d{1,2}(?:st|nd|rd|th)?\s+\w+\s+\d{4}|'  
+    r'\w+\s+\d{1,2},\s+\d{4}|'            
+    r'\d{1,2}-\w+-\d{4}|'                 
+    r'\w+\s+\d{1,2}(?:st|nd|rd),\s+\d{4}|' 
+    r'\w+\s+\d{1,2}(?:st|nd|rd)?\s+\d{4}|' 
+    r'\b\w+\s+\d{1,2}(?:st|nd|rd|th),\s+\d{4}\b'  
+    r')\b'
+)
+
+def extract_dates_from_json():
+    with open(headings_file_path, "r", encoding="utf-8") as file:
+        json_data = json.load(file)  # Load JSON
+
+    json_string = json.dumps(json_data)  # Convert JSON to a string
+    dates = date_pattern.findall(json_string)  # Find all date matches
+    return dates
+
 
 async def analyze_format():
     try:
-        dates=load_normalized_dates()
+        dates=extract_dates_from_json()
+        print(dates)
         result = await analyze_dates(dates)  
         return result
     except HTTPException as http_err:

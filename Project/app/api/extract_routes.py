@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.services.extract_service import extract
 
 extract_router = APIRouter()
-@extract_router.get("/extractdates")
+@extract_router.get("/extract")
 async def process():
     try:
         response=await extract()
