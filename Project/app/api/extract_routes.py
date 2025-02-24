@@ -9,3 +9,4 @@ async def process():
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Format analysis failed: {e}")
+    

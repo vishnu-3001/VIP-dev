@@ -64,18 +64,43 @@ Here is the array of dates:
 </Data>"""
     return prompt
 
-def normalize_dates_prompt(dates):
-    formatted_dates = "\n".join([f"- {date}" for date in dates])  
+
+def references_prompt(citations,references):
+    apa_citations = ", ".join(citations.get("APA", [])) or "No APA citations found"
+    mla_citations = ", ".join(citations.get("MLA", [])) or "No MLA citations found"
+    numeric_citations = ", ".join(citations.get("Numeric", [])) or "No Numeric citations found"
+
     prompt = f"""
-        Normalize the following dates into ISO format (YYYY-MM-DD):
-        {formatted_dates}
-        
-        Example Output:
-        Input: 2nd March 2025 → Output: 2025-03-02
-        Input: 04-05-25 → Output: 2025-05-04
-        
-        Provide ONLY an array of formatted dates without extra text.
+    <system>
+    You are an expert in academic writing and citation verification.
+    Your task is to analyze citations extracted from a document and compare them with the provided References section.
+    
+    **Steps to follow:**
+    1. Identify **citations in the main text** that do not have a corresponding entry in the References section.
+    2. Identify **references in the References section** that were never cited in the main text.
+    3. Provide a **rating out of 5** based on how well the citations and references match:
+       - **5/5** = All citations are properly referenced, and there are no extra references.
+       - **4/5** = Minor missing citations or extra references.
+       - **3/5** = Some missing citations or extra references (moderate issue).
+       - **2/5** = Several missing citations or many unused references (significant issue).
+       - **1/5** = Most citations are missing or references are mostly incorrect.
+    4. Give **constructive feedback** on how to improve citation accuracy.
+    
+      "rating": "Final rating out of 5",
+      "feedback": "Brief feedback on how to improve citations"
+
+    </system>
+
+<data>
+    **Citations Extracted from the Main Text**:
+    APA Citations: {apa_citations}
+    MLA Citations: {mla_citations}
+    Numeric Citations: {numeric_citations}
+
+    **References Extracted from the References Section**:
+    {references}
+    </data>
     """
-    return prompt.strip()  
+    return prompt
 
         

@@ -7,8 +7,9 @@ from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
 from langchain.schema import AIMessage
-
 from app.services.drive_services import fetch_drive_data
+from app.services.citations import extract_citations
+
 from utils import *
 
 load_dotenv()
@@ -100,7 +101,6 @@ def extract_dates_from_json():
 async def analyze_format():
     try:
         dates=extract_dates_from_json()
-        print(dates)
         result = await analyze_dates(dates)  
         return result
     except HTTPException as http_err:
@@ -110,6 +110,31 @@ async def analyze_format():
         logging.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing log data: {str(e)}")
     
+
+#code for analysing references
+
+async def analyze_citations(citations,references):
+    prompt_template=references_prompt(citations,references)
+    prompt = PromptTemplate(input_variables=['citations', 'references'], template=prompt_template)
+    chain = prompt | llm
+    analysis = await chain.ainvoke({"citations": citations, "references": references})
+    if isinstance(analysis,AIMessage):
+        summary=analysis.content
+    return summary
+
+
+async def analyze_references():
+    try:
+        citations,references=extract_citations()
+        result=await analyze_citations(citations,references)
+        return result
+    except HTTPException as http_err:
+        logging.error(f"HTTP error:{http_err.detail}")
+        raise
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500,detail=f"Error processing references: {str(e)}")
+
 
 
 
