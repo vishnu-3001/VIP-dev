@@ -7,11 +7,11 @@ drive_router = APIRouter()
 async def download_file(file_id: str):
     try:
         service = fetch_drive_data()  
-        file_name = "download_file.pdf"
+        file_name = "download_file.html"
         current_dir = os.path.dirname(__file__)
         utils_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "utils"))
         destination_path = os.path.join(utils_dir, file_name)
-        mime_type = "application/pdf"
+        mime_type = "text/html"
         success = download(service, mime_type, file_id, destination_path)
         if success:
             return {"message": "File downloaded successfully", "file_path": destination_path}
