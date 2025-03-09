@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.services.drive_services import  fetch_drive_data,download
+from fastapi.responses import JSONResponse
 import os
 
 drive_router = APIRouter()
@@ -14,7 +15,12 @@ async def download_file(file_id: str):
         mime_type = "text/html"
         success = download(service, mime_type, file_id, destination_path)
         if success:
-            return {"message": "File downloaded successfully", "file_path": destination_path}
+            # Read file content as text
+            with open(destination_path, 'r', encoding='utf-8') as file:
+                file_content = file.read()
+
+            # Return content as JSON
+            return JSONResponse(content={"file": file_content})
         else:
             raise HTTPException(status_code=500, detail="File download failed")
     except HTTPException as http_err:
