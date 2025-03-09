@@ -1,7 +1,17 @@
 import uvicorn
 from app import app
 from app.api import drive_router, analysis_router,extract_router
+from fastapi.middleware.cors import CORSMiddleware
+origins = "*"
 
+# Centralized CORS setup
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 app.include_router(drive_router, prefix="/api/v1/drive", tags=["Google Drive"])
