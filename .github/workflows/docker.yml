@@ -1,4 +1,4 @@
-name: Build and Deploy to AWS App Runner
+name: Build and Deploy FastAPI to AWS Amplify
 
 on:
   push:
@@ -29,30 +29,29 @@ jobs:
     # ✅ Step 4: Login to Amazon ECR
     - name: Login to Amazon ECR
       run: |
-        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-        docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-    # ✅ Step 5: Build and Tag Docker Image for Backend
-    - name: Build Backend Docker Image
+    # ✅ Step 5: Build and Tag Docker Image
+    - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:latest ./backend
-        docker tag ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:${{ github.sha }}
-    
-    # ✅ Step 6: Push Docker Images to ECR
-    - name: Push Backend Docker Image to ECR
+        docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest .
+        docker tag ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+
+    # ✅ Step 6: Push Docker Image to ECR
+    - name: Push Docker image to ECR
       run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:latest
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:${{ github.sha }}
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-
-  deploy-to-apprunner:
+  deploy-to-amplify:
     runs-on: ubuntu-latest
     needs: build-and-push
 
     steps:
-    # ✅ Step 8: Deploy Backend to AWS App Runner
-    - name: Deploy Backend to AWS App Runner
+    # ✅ Step 7: Trigger Deployment in AWS Amplify
+    - name: Deploy to AWS Amplify
       run: |
-        aws apprunner update-service \
-          --service-arn ${{ secrets.BACKEND_SERVICE_ARN }} \
-          --source-configuration ImageRepository="{ImageIdentifier=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.BACKEND_REPOSITORY }}:latest,ImageRepositoryType=ECR}"
+        aws amplify start-job \
+          --app-id <AMPLIFY_APP_ID> \
+          --branch-name main \
+          --job-type RELEASE
