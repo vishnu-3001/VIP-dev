@@ -39,6 +39,7 @@ async def download_file(file_id: str):
             # Read file content as text
             with open(destination_path, 'r', encoding='utf-8') as file:
                 html_content = file.read()
+            original_content=html_content
             parser=MyHTMLParser()
             parser.feed(html_content)
             extracted_sections=parser.sections
@@ -52,7 +53,7 @@ async def download_file(file_id: str):
                 })
 
             # Return content as JSON
-            return JSONResponse(content={"sections":json_output})
+            return JSONResponse(content={"original":original_content,"enhanced":json_output})
         else:
             raise HTTPException(status_code=500, detail="File download failed")
     except HTTPException as http_err:
