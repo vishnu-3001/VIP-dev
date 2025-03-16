@@ -1,20 +1,37 @@
-# Use official Python base image (small and optimized)
+# Use official Python base image with build tools
 FROM python:3.10-slim
 
-# Set the working directory inside the container
+# Install system dependencies for building wheels
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libffi-dev \
+    libssl-dev \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    libmupdf-dev \
+    mupdf \
+    libgl1 \
+    libx11-6 \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# Set working directory
 WORKDIR /app
 
-# Copy the requirements file into the container
+# Copy requirements first for caching
 COPY requirements.txt .
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Upgrade pip and install dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code into the container
+# Copy application code
 COPY . .
 
-# Expose the FastAPI port (8000)
+# Expose port (App Runner will use PORT env var)
 EXPOSE 8000
 
-# Start FastAPI using Uvicorn in production mode
+# Run with dynamic port configuration
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
