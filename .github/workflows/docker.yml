@@ -43,16 +43,3 @@ jobs:
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
-  deploy-to-app-runner:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-
-    steps:
-    # ✅ Step 7: Deploy to AWS App Runner
-    - name: Deploy to AWS App Runner
-      run: |
-        aws apprunner create-service \
-          --service-name ${{ secrets.APP_RUNNER_SERVICE_NAME }} \
-          --source-configuration "ImageRepository={ImageIdentifier=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest,ImageRepositoryType=ECR}" \
-          --instance-configuration "Cpu=1 vCpu,Memory=2 GB" \
-         
