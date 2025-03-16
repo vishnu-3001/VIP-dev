@@ -42,16 +42,3 @@ jobs:
       run: |
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
         docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
-
-  deploy-to-amplify:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-
-    steps:
-    # ✅ Step 7: Trigger Deployment in AWS Amplify
-    - name: Deploy to AWS Amplify
-      run: |
-        aws amplify start-job \
-          --app-id <AMPLIFY_APP_ID> \
-          --branch-name main \
-          --job-type RELEASE
