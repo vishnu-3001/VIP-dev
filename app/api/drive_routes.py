@@ -28,13 +28,14 @@ class MyHTMLParser(HTMLParser):
 @drive_router.get("/download")
 async def download_file(file_id: str):
     try:
-        service = fetch_drive_data()  
+        # service = fetch_drive_data()  
         file_name = "download_file.html"
         current_dir = os.path.dirname(__file__)
         utils_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "utils"))
         destination_path = os.path.join(utils_dir, file_name)
         mime_type = "text/html"
-        success = download(service, mime_type, file_id, destination_path)
+        # success = download(service, mime_type, file_id, destination_path)
+        success=True
         if success:
             # Read file content as text
             with open(destination_path, 'r', encoding='utf-8') as file:
