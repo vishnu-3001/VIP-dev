@@ -3,6 +3,8 @@ import uvicorn
 from app import app
 from app.api import drive_router, analysis_router, extract_router
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 
 # Add CORS middleware first before routers
 app.add_middleware(
@@ -23,9 +25,9 @@ app.include_router(extract_router, prefix="/api/v1/extract", tags=["Extraction"]
 def root():
     return {"status": "ok"}
 
-@app.get("/health")  # Added health check endpoint
+@app.get("/health")
 def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    return JSONResponse(content={'result': 'OK', 'status': [200]})
 
 def main():
     # Read port from environment variable
