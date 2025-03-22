@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.services.drive_services import  fetch_drive_data,download
+# from app.services.drive_services import  fetch_drive_data,download,list_drive_files
+from app.services.drive_services import list_drive_files
 from fastapi.responses import JSONResponse
 import os
 from html.parser import HTMLParser
@@ -61,4 +62,13 @@ async def download_file(file_id: str):
         raise http_err
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    
+
+@drive_router.get("/drive/files")
+def get_drive_files():
+    try:
+        files=list_drive_files()
+        return {"files":files}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"Failed to list drive files: {e}")
 
