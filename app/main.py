@@ -31,10 +31,7 @@ def health_check():
     return JSONResponse(content={'result': 'OK', 'status': [200]})
 
 def main():
-    # Read port from environment variable
     port = int(os.getenv("PORT", 8000))
-    
-    # Configure for production vs development
     if os.getenv("ENV") == "prod":
         uvicorn.run("app.main:app", host="0.0.0.0", port=port, workers=2)
     else:

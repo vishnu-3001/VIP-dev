@@ -11,13 +11,6 @@ from app.database import get_connection
 current_dir = os.path.dirname(os.path.abspath(__file__))
 token_path = os.path.join(current_dir, '..', 'Auth', 'token.json')
 scopes = ['https://www.googleapis.com/auth/drive']
-
-import json
-
-import json
-
-import json
-
 def get_credentials_from_db():
     conn = None
     try:
@@ -53,7 +46,6 @@ def get_redirect_uri():
 def get_oauth_url():
     try:
         credentials = get_credentials_from_db()
-        # print(credentials)
         flow = Flow.from_client_config(
             credentials,
             scopes=scopes,
@@ -68,7 +60,6 @@ def get_oauth_url():
 def exchange_code_for_token(code):
     try:
         credentials = get_credentials_from_db()
-        # print(credentials)
         flow = Flow.from_client_config(
             credentials,
             scopes=scopes,
@@ -76,10 +67,9 @@ def exchange_code_for_token(code):
         )
         flow.fetch_token(code=code)
         creds = flow.credentials
-        with open(token_path, 'w') as token_file:
-            token_file.write(creds.to_json())
+        creds_json=creds.to_json()
         logging.info("Token saved successfully")
-        return {"message": "Authentication successful"}
+        return creds_json
     except Exception as e:
         logging.error(f"Failed to exchange code for token: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to exchange code for token: {e}")
