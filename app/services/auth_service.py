@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import requests
 from fastapi import HTTPException
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
@@ -10,7 +11,11 @@ from app.database import get_connection
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 token_path = os.path.join(current_dir, '..', 'Auth', 'token.json')
-scopes = ['https://www.googleapis.com/auth/drive']
+scopes = scopes = [
+    'openid',
+    'https://www.googleapis.com/auth/drive',          
+    'https://www.googleapis.com/auth/userinfo.email'
+]
 def get_credentials_from_db():
     conn = None
     try:
@@ -69,6 +74,13 @@ def exchange_code_for_token(code):
     except Exception as e:
         logging.error(f"Failed to exchange code for token: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to exchange code for token: {e}")
+    
+
+def get_user_info(token):
+    headers = {'Authorization': f'Bearer {token}'}
+    response = requests.get('https://www.googleapis.com/oauth2/v1/userinfo', headers=headers)
+    user_info = response.json()
+    return user_info
 
 def get_drive_credentials():
     creds = None
