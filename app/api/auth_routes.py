@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Request
 from fastapi.responses import RedirectResponse
-from app.services.auth_service import get_oauth_url,get_drive_credentials,exchange_code_for_token
+from app.services.auth_service import get_oauth_url,get_drive_credentials,exchange_code_for_token,get_user_info
 import os
 
 authRouter=APIRouter()
@@ -15,14 +15,17 @@ def auth():
     
 @authRouter.get("/auth/callback")
 async def auth_callback(code: str):
+    env=os.getenv("ENVIRONMENT")
     try:
         token_data = exchange_code_for_token(code)
         token = token_data["token"]
-        env=os.getenv("ENVIRONMENT")
+        user_info=get_user_info(token)
+        print(user_info)
+        user_email=user_info.get('email')
         if env=='dev':
-            frontend_redirect_url = f"http://localhost:3000/Login?token={token}"
+            frontend_redirect_url = f"http://localhost:3000/Login?token={token}&email={user_email}"
         else:
-            frontend_redirect_url=f"https://jzpy63gus2.us-east-2.awsapprunner.com/Login?token={token}"
+            frontend_redirect_url=f"https://jzpy63gus2.us-east-2.awsapprunner.com/Login?token={token}&email=${user_email}"
         return RedirectResponse(url=frontend_redirect_url)
     except Exception as e:
         if env=='dev':
