@@ -20,15 +20,12 @@ def get_credentials_from_db():
             row = cursor.fetchone()
             if row:
                 credentials = row[0] if isinstance(row, tuple) else row.get("credentials")
-                print(row)
                 if isinstance(credentials, str):
                     credentials = credentials.strip('"')
                     try:
                         credentials = json.loads(credentials)
                     except json.JSONDecodeError as e:
                         raise Exception(f"Failed to parse credentials JSON: {e}")
-
-                print(f"Fetched credentials: {credentials}") 
                 return credentials
             else:
                 raise Exception("Credentials not found in database.")
@@ -66,10 +63,9 @@ def exchange_code_for_token(code):
             redirect_uri=get_redirect_uri()
         )
         flow.fetch_token(code=code)
-        creds = flow.credentials
-        creds_json=creds.to_json()
+        token=flow.credentials.token
         logging.info("Token saved successfully")
-        return creds_json
+        return {"token":token}
     except Exception as e:
         logging.error(f"Failed to exchange code for token: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to exchange code for token: {e}")
