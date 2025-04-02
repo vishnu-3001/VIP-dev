@@ -20,7 +20,6 @@ async def auth_callback(code: str):
         token_data = exchange_code_for_token(code)
         token = token_data["token"]
         user_info=get_user_info(token)
-        print(user_info)
         user_email=user_info.get('email')
         if env=='dev':
             frontend_redirect_url = f"http://localhost:3000/Login?token={token}&email={user_email}"
