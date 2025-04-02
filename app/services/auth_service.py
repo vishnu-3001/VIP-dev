@@ -13,7 +13,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 token_path = os.path.join(current_dir, '..', 'Auth', 'token.json')
 scopes = scopes = [
     'openid',
-    'https://www.googleapis.com/auth/drive',          
+    'https://www.googleapis.com/auth/drive.readonly',          
     'https://www.googleapis.com/auth/userinfo.email'
 ]
 def get_credentials_from_db():
