@@ -1,65 +1,43 @@
-from fastapi import APIRouter, HTTPException
-# from app.services.drive_services import  fetch_drive_data,download,list_drive_files
-# from app.services.drive_services import list_drive_files
-from fastapi.responses import JSONResponse
-import os
+from fastapi import APIRouter, HTTPException,Request
 from html.parser import HTMLParser
+import requests
+from app.database import get_connection
+import json
 
 drive_router = APIRouter()
 
-colormap=[
-    "#FFCCCC", "#CCFFCC", "#CCCCFF",
-    "#FFFFCC", "#FFCCFF", "#CCFFFF", "#FFD700"
-]
 
-class MyHTMLParser(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.sections=[]
-        self.current_content=""
-    def handle_starttag(self,tag,attrs):
-        if tag=="p":
-            self.current_content=""
-    def handle_endtag(self,tag):
-        if tag=="p" and self.current_content.strip():
-            self.sections.append(self.current_content.strip())
-    def handle_data(self,data):
-        self.current_content+=data
+@drive_router.get("/download")
+def download_file(file_id:str,request:Request):
+    file_url=f"https://docs.googleapis.com/v1/documents/{file_id}"
+    oauth_token=request.headers.get("Oauth-Token")
+    email=request.headers.get("Email")
+    headers={
+        "Authorization":f"Bearer {oauth_token}"
+    }
+    response=requests.get(file_url,headers=headers)
+    if response.status_code != 200:
+        try:
+            error_detail = response.json()
+            print(error_detail)
+        except Exception:
+            error_detail = response.text
+            raise HTTPException(status_code=response.status_code, detail=error_detail)
+    file_content=response.json()
+    file_content_str=json.dumps(file_content)
+    try:
+        conn=get_connection()
+        cursor=conn.cursor()
+        insert_query= """insert into documents (document_id,document_text,user_email) values (%s,%s,%s)"""
+        cursor.execute(insert_query,(file_id,file_content_str,email))
+        conn.commit()
+        return {"message": "Document downloaded and stored successfully", "document_name": file_content.get("title")}
+    except:
+        raise HTTPException(status_code=500,detail="Failed to insert file content into database")
+    finally:
+        from app.database import db_pool
+        if db_pool:
+            db_pool.putconn(conn)
 
-# @drive_router.get("/download")
-# async def download_file(file_id: str):
-#     try:
-#         service = fetch_drive_data()  
-#         file_name = "download_file.html"
-#         current_dir = os.path.dirname(__file__)
-#         utils_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "utils"))
-#         destination_path = os.path.join(utils_dir, file_name)
-#         mime_type = "text/html"
-#         success = download(service, mime_type, file_id, destination_path)
-#         success=True
-#         if success:
-#             with open(destination_path, 'r', encoding='utf-8') as file:
-#                 html_content = file.read()
-#             original_content=html_content
-#             parser=MyHTMLParser()
-#             parser.feed(html_content)
-#             extracted_sections=parser.sections
-#             json_output=[]
-#             for i,content in enumerate(extracted_sections):
-#                 color=colormap[i%len(colormap)]
-#                 wrapped_content=f"<div style='background-color:{color}; padding:10px; margin-bottom:10px;border-radius:5px;'>{content}</div>"
-#                 json_output.append({
-#                     "content":wrapped_content,
-#                     "color":color
-#                 })
-
-#             # Return content as JSON
-#             return JSONResponse(content={"original":original_content,"enhanced":json_output})
-#         else:
-#             raise HTTPException(status_code=500, detail="File download failed")
-#     except HTTPException as http_err:
-#         raise http_err
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
     
 
