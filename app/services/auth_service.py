@@ -6,7 +6,6 @@ from fastapi import HTTPException
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
-from psycopg2.extras import RealDictCursor
 from app.database import get_connection
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +13,8 @@ token_path = os.path.join(current_dir, '..', 'Auth', 'token.json')
 scopes = scopes = [
     'openid',
     'https://www.googleapis.com/auth/drive.readonly',          
-    'https://www.googleapis.com/auth/userinfo.email'
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/documents.readonly'
 ]
 def get_credentials_from_db():
     conn = None
