@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Request
 from fastapi.responses import RedirectResponse
-from app.services.auth_service import get_oauth_url,get_drive_credentials,exchange_code_for_token,get_user_info
+from app.services.auth_service import get_oauth_url,exchange_code_for_token,get_user_info
 import os
 
 authRouter=APIRouter()
