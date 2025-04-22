@@ -248,8 +248,6 @@ async def upload_enhanced(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         my_credentials_dict = get_credentials_from_db()
-
-        # Step 2: Rebuild it into a Credentials object
         creds = Credentials(
             token=my_credentials_dict["token"],
             refresh_token=my_credentials_dict.get("refresh_token"),
