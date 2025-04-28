@@ -77,7 +77,9 @@ async def download_document(file_id: str, request: Request,background_tasks:Back
         content=original_doc,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={
-            "Content-Disposition": f'inline; filename="{document_title}.docx"'
+            "Content-Disposition": f'inline; filename="{document_title}.docx"',
+            "X-Document-Title":document_title,
+            "Access-Control-Expose-Headers": "X-Document-Title"  # <-- Add this line!
         }
     )
 
@@ -85,7 +87,6 @@ async def download_document(file_id: str, request: Request,background_tasks:Back
 
 @drive_router.get("/enhancedDoc")
 async def get_enhanced_doc(file_id:str,request:Request):
-    print(file_id)
     try:
         conn=get_connection()
         cursor=conn.cursor()
@@ -116,22 +117,22 @@ async def get_enhanced_doc(file_id:str,request:Request):
 
 
 @drive_router.post("/uploadDoc")
-async def upload_enhanced(file: UploadFile = File(...)):
+async def upload_enhanced(token:str,refresh_token:str,title:str,file: UploadFile = File(...)):
     try:
         contents = await file.read()
         my_credentials_dict = get_credentials_from_db()
         creds = Credentials(
-            token=my_credentials_dict["token"],
-            refresh_token=my_credentials_dict.get("refresh_token"),
+            token=token,
+            refresh_token=refresh_token,
             token_uri=my_credentials_dict.get("token_uri", "https://oauth2.googleapis.com/token"),
-            client_id=my_credentials_dict["client_id"],
-            client_secret=my_credentials_dict["client_secret"],
-            scopes=my_credentials_dict.get("scopes", ["https://www.googleapis.com/auth/drive.file"])
+            client_id=my_credentials_dict.get("web").get("client_id"),
+            client_secret=my_credentials_dict.get("web").get("client_secret"),
+            scopes=my_credentials_dict.get("web").get("scopes")
         )
         drive_service = build('drive', 'v3', credentials=creds)
 
         file_metadata = {
-            'name': file.filename,
+            'name': title,
             'mimeType': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         }
         media = MediaIoBaseUpload(io.BytesIO(contents), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -141,7 +142,6 @@ async def upload_enhanced(file: UploadFile = File(...)):
             media_body=media,
             fields='id'
         ).execute()
-
         return {"fileId": uploaded_file.get("id")}
 
     except Exception as e:

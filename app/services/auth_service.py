@@ -70,8 +70,9 @@ def exchange_code_for_token(code):
         )
         flow.fetch_token(code=code)
         token=flow.credentials.token
+        refresh_token=flow.credentials.refresh_token
         logging.info("Token saved successfully")
-        return {"token":token}
+        return {"token":token,"refresh_token":refresh_token}
     except Exception as e:
         logging.error(f"Failed to exchange code for token: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to exchange code for token: {e}")

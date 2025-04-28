@@ -19,12 +19,13 @@ async def auth_callback(code: str):
     try:
         token_data = exchange_code_for_token(code)
         token = token_data["token"]
+        refresh_token = token_data["refresh_token"]
         user_info=get_user_info(token)
         user_email=user_info.get('email')
         if env=='dev':
-            frontend_redirect_url = f"http://localhost:3000/Login?token={token}&email={user_email}"
+            frontend_redirect_url = f"http://localhost:3000/Login?token={token}&email={user_email}&refresh_token={refresh_token}"
         else:
-            frontend_redirect_url=f"https://jzpy63gus2.us-east-2.awsapprunner.com/Login?token={token}&email=${user_email}"
+            frontend_redirect_url=f"https://jzpy63gus2.us-east-2.awsapprunner.com/Login?token={token}&email=${user_email}&refresh_token={refresh_token}"
         return RedirectResponse(url=frontend_redirect_url)
     except Exception as e:
         if env=='dev':
