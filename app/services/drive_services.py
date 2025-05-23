@@ -1,6 +1,7 @@
 import re
 import io
-from typing import List,Tuple
+import json
+from typing import List,Dict,Tuple
 from docx import Document
 from langchain.prompts import PromptTemplate
 from docx.oxml import OxmlElement
@@ -11,11 +12,11 @@ from fastapi import HTTPException
 
 
 highlight_colors = {
-    "project-update": "blue",
-    "meeting-notes": "cyan",
-    "todo": "green",
-    "feedback": "yellow",
-    "other": "gray"
+    "project-update": "#d6eaf8",
+    "meeting-notes": "#e8daef",
+    "todo": "#ffdab9",
+    "feedback": "#fffacd",
+    "other": "#d5f5e3"
 }
 
 date_pattern=re.compile(
@@ -80,45 +81,79 @@ Your answer (one word only):
 
     return output if output in highlight_colors else "other"
 
-def apply_highlight_preserve_styles(para, color):
+def apply_highlight_preserve_styles(para, hex_color):
     for run in para.runs:
         if run.text.strip():
-            highlight = OxmlElement('w:highlight')
-            highlight.set(qn('w:val'), color)
             rPr = run._element.get_or_add_rPr()
-            rPr.append(highlight)
+            shd = OxmlElement('w:shd')
+            shd.set(qn('w:val'), 'clear')
+            shd.set(qn('w:color'), 'auto')
+            shd.set(qn('w:fill'), hex_color.replace("#", ""))
+            rPr.append(shd)
 
-async def highlight_by_semantics(doc_bytes:bytes)->bytes:
+async def highlight_by_semantics(doc_bytes: bytes,file_id) -> bytes:
     doc_io = io.BytesIO(doc_bytes)
-    doc, chunks = chunk_by_dates(doc_io)
-    for chunk in chunks:
-        paragraphs = [p.text.strip() for p in chunk] 
-        label = await classify_paragraphs(paragraphs) 
-        for para in chunk:
-            apply_highlight_preserve_styles(para, highlight_colors.get(label, "gray"))
+    doc,chunks_by_date = chunk_by_dates(doc_io)
+    date_label_data={}
+    for date, paragraphs in chunks_by_date.items():
+        para_texts = [p.text.strip() for p in paragraphs if p.text.strip()]
+        if not para_texts:
+            continue
+        label = await classify_paragraphs(para_texts)
+        date_label_data[date]=label
+        for para in paragraphs:
+            if para.text.strip():
+                apply_highlight_preserve_styles(para, highlight_colors.get(label, "gray"))
     output_io = io.BytesIO()
     doc.save(output_io)
+    save_date_label_data(date_label_data,file_id)
     output_io.seek(0)
     return output_io.getvalue()
 
-def chunk_by_dates(doc_input)->Tuple[Document,List[List]]:
-    doc=Document(doc_input)
-    chunks=[]
-    paragraphs=doc.paragraphs
-    current_chunk=[]
+def save_date_label_data(data,file_id):
+    conn=get_connection()
+    cursor=conn.cursor()
+    try:
+        insert_query="""
+            UPDATE documents SET date_label_data = %s WHERE document_id = %s
+        """
+        cursor.execute(insert_query,(json.dumps(data),file_id))
+        print("date label data saved")
+        conn.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"Database update failed with date label data:{str(e)}")
+    
+
+def chunk_by_dates(doc_input) -> Tuple[Document, Dict[str, List]]:
+    doc = Document(doc_input)
+    paragraphs = doc.paragraphs
+    chunks_by_date = {}
+    current_date = None
+    current_chunk = []
     for para in paragraphs:
-        if date_pattern.match(para.text.strip()):
+        text = para.text.strip()
+        match = date_pattern.match(text)
+        if match:
             if current_chunk:
-                chunks.append(current_chunk)
-            current_chunk=[para]
+                if current_date in chunks_by_date:
+                    chunks_by_date[current_date].extend(current_chunk)
+                else:
+                    chunks_by_date[current_date] = current_chunk
+            current_date = match.group(1)
+            current_chunk = [para]
         else:
             current_chunk.append(para)
     if current_chunk:
-        chunks.append(current_chunk)
-    return doc,chunks
+        if current_date in chunks_by_date:
+            chunks_by_date[current_date].extend(current_chunk)
+        else:
+            chunks_by_date[current_date] = current_chunk
+
+    return doc,chunks_by_date
+
 
 async def enhance_and_store(file_id,doc_bytes,email):
-    enhanced_doc_bytes=await highlight_by_semantics(doc_bytes)
+    enhanced_doc_bytes=await highlight_by_semantics(doc_bytes,file_id)
     conn=get_connection()
     cursor=conn.cursor()
     try:
