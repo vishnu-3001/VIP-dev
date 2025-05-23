@@ -1,34 +1,14 @@
 from fastapi import APIRouter, HTTPException
-from app.services.analysis_service import analyze_format,analyze_references
-import logging
+from app.services.analysis_service import get_date_label_data
 
 analysis_router = APIRouter()
 
-# @analysis_router.get("/logs/{file_id}")  
-# async def analyze_logs_method(file_id: str):
-#     try:
-#         return await analyze_logs(file_id)  
-#     except HTTPException as http_err:
-#         raise http_err
-#     except Exception as e:
-#         logging.error(f"Unexpected error: {e}")
-#         raise HTTPException(status_code=500, detail=f"Error processing logs: {str(e)}")
-@analysis_router.get("/format")
-async def get_format_analysis():
+@analysis_router.get("/date_analysis")
+async def date_analysis(file_id:str):
     try:
-        response=await analyze_format()
+        response=await get_date_label_data(file_id)
+        if not response:
+            raise HTTPException(status_code=500, detail="No date label data found")
         return response
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail=f"Format analysis failed: {e}")
-    
-@analysis_router.get("/references")
-async def get_references_analysis():
-    try:
-        response=await analyze_references()
-        return response
-    except Exception as e:
-        logging.error(f"Unexpected error;{e}")
-        raise HTTPException(status_code=500,detail=f"references analysis failed:{e}")
-
-
+        raise HTTPException(status_code=500, detail=f"Error retreiving date label data:{str(e)}")
