@@ -69,24 +69,27 @@ async def get_date_analysis(data):
     output=json.loads(output)
     return output["report"]
 
+
 def group_data(converted_dict):
-    yearly_data={}
-    monthly_data={}
-    for key,label in converted_dict.items():
-        date_obj=datetime.strptime(key,"%Y-%m-%d")
-        year=date_obj.year
-        month=date_obj.month
+    yearly_data = {}
+    monthly_data = {}
+    for key, label in converted_dict.items():
+        date_obj = datetime.strptime(key, "%Y-%m-%d")
+        year = date_obj.year
+        month = date_obj.month
+        month_year_label = f"{month:02d}-{year}"
         if year not in yearly_data:
-            yearly_data[year]={}
-        if month not in monthly_data:
-            monthly_data[month]={}
+            yearly_data[year] = {}
         if label not in yearly_data[year]:
-            yearly_data[year][label]=0
-        if label not in monthly_data[month]:
-            monthly_data[month][label]=0
-        yearly_data[year][label]+=1
-        monthly_data[month][label]+=1
-    return yearly_data,monthly_data
+            yearly_data[year][label] = 0
+        yearly_data[year][label] += 1
+        if month_year_label not in monthly_data:
+            monthly_data[month_year_label] = {}
+        if label not in monthly_data[month_year_label]:
+            monthly_data[month_year_label][label] = 0
+        monthly_data[month_year_label][label] += 1
+
+    return yearly_data, monthly_data
 
 
 
