@@ -95,11 +95,14 @@ async def highlight_by_semantics(doc_bytes: bytes,file_id) -> bytes:
     doc_io = io.BytesIO(doc_bytes)
     doc,chunks_by_date = chunk_by_dates(doc_io)
     date_label_data={}
+    vector_data=[]
     for date, paragraphs in chunks_by_date.items():
         para_texts = [p.text.strip() for p in paragraphs if p.text.strip()]
         if not para_texts:
             continue
         label = await classify_paragraphs(para_texts)
+        vector={"date":date,"label":label,"paragraphs":para_texts,"doc_id":file_id}
+        vector_data.append(vector)
         date_label_data[date]=label
         for para in paragraphs:
             if para.text.strip():
@@ -108,7 +111,7 @@ async def highlight_by_semantics(doc_bytes: bytes,file_id) -> bytes:
     doc.save(output_io)
     save_date_label_data(date_label_data,file_id)
     output_io.seek(0)
-    return output_io.getvalue()
+    return output_io.getvalue(),vector_data,date_label_data
 
 def save_date_label_data(data,file_id):
     conn=get_connection()
@@ -153,7 +156,9 @@ def chunk_by_dates(doc_input) -> Tuple[Document, Dict[str, List]]:
 
 
 async def enhance_and_store(file_id,doc_bytes,email):
-    enhanced_doc_bytes=await highlight_by_semantics(doc_bytes,file_id)
+    enhanced_doc_bytes,vector_data,date_label_data=await highlight_by_semantics(doc_bytes,file_id)
+    upload_to_pinecone(vector_data)
+    await upload_summary_vector(date_label_data,file_id)
     conn=get_connection()
     cursor=conn.cursor()
     try:
