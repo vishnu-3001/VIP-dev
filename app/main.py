@@ -1,7 +1,7 @@
 import os
 import uvicorn
 from app import app
-from app.api import drive_router, analysis_router, extract_router, authRouter
+from app.api import drive_router, analysis_router, authRouter,rag_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi import Request
@@ -15,11 +15,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers after middleware
 app.include_router(drive_router, prefix="/api/v1/drive", tags=["Google Drive"])
 app.include_router(analysis_router, prefix="/api/v1/analysis", tags=["Analysis"])
-app.include_router(extract_router, prefix="/api/v1/extract", tags=["Extraction"])
 app.include_router(authRouter, prefix="/api/v1", tags=["Authentication"])
+app.include_router(rag_router, prefix="/api/v1/rag", tags=["Rag chat"])
 
 # Required endpoints
 @app.get("/")
