@@ -4,6 +4,7 @@ from datetime import datetime
 from app.database import get_connection
 from utils import *
 from langchain.prompts import PromptTemplate
+from collections import defaultdict
 
 async def get_date_label_data(file_id):
     conn = get_connection()
@@ -30,11 +31,15 @@ async def get_date_label_data(file_id):
             except Exception:
                 continue
         yearly_data,monthly_data=group_data(converted_dict)
-        analysis=await get_date_analysis(converted_dict)
+        semester_data,quarterly_data=academic_year_data(converted_dict)
+        component_data=component_wise_data(converted_dict)
         response={
             "yearly_data":yearly_data,
             "monthly_data":monthly_data,
-            "report":analysis
+            "report":"",
+            "semester_data":semester_data,
+            "quarterly_data":quarterly_data,
+            "component_data":component_data
         }
         return response
     except Exception as e:
@@ -91,12 +96,64 @@ def group_data(converted_dict):
 
     return yearly_data, monthly_data
 
+def semester_suffix(date_str):
+    date_obj=datetime.strptime(date_str,"%Y-%m-%d")
+    year_suffix=str(date_obj.year)[-2:]
+    month=date_obj.month
+    if 1<=month<=5:
+        return f"Spring {year_suffix}"
+    elif 8<=month<=12:
+        return f"Fall {year_suffix}"
+    else:
+        return f"Summer {year_suffix}"
+
+def get_academic_quarter(date_str):
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    month = date_obj.month
+    year = date_obj.year
+
+    if 9 <= month <= 11:
+        quarter_name = "Fall"
+        quarter_year = year
+    elif month == 12:
+        quarter_name = "Winter"
+        quarter_year = year + 1
+    elif 1 <= month <= 2:
+        quarter_name = "Winter"
+        quarter_year = year
+    elif 3 <= month <= 5:
+        quarter_name = "Spring"
+        quarter_year = year
+    else: 
+        quarter_name = "Summer"
+        quarter_year = year
+
+    year_suffix = str(quarter_year)[-2:]
+    return f"{quarter_name} {year_suffix}"
 
 
+def academic_year_data(grouped_data):
+    semester_data = {}
+    quarterly_data = {}
 
+    for date_str, label in grouped_data.items():
+        semester = semester_suffix(date_str)
+        quarter = get_academic_quarter(date_str)
+        if semester not in semester_data:
+            semester_data[semester] = {}
+        if label not in semester_data[semester]:
+            semester_data[semester][label] = 0
+        semester_data[semester][label] += 1
+        if quarter not in quarterly_data:
+            quarterly_data[quarter] = {}
+        if label not in quarterly_data[quarter]:
+            quarterly_data[quarter][label] = 0
+        quarterly_data[quarter][label] += 1
 
-            
+    return semester_data, quarterly_data
 
-
-
-
+def component_wise_data(grouped_data):
+    component_data=defaultdict(int)
+    for date_str, label in grouped_data.items():
+        component_data[label] += 1
+    return component_data

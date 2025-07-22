@@ -157,8 +157,6 @@ def chunk_by_dates(doc_input) -> Tuple[Document, Dict[str, List]]:
 
 async def enhance_and_store(file_id,doc_bytes,email):
     enhanced_doc_bytes,vector_data,date_label_data=await highlight_by_semantics(doc_bytes,file_id)
-    upload_to_pinecone(vector_data)
-    await upload_summary_vector(date_label_data,file_id)
     conn=get_connection()
     cursor=conn.cursor()
     try:

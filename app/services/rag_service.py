@@ -3,7 +3,6 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from utils import *
 from dotenv import load_dotenv
-import os
 load_dotenv()
 index = get_index()
 emodel = embeddings_model()
@@ -24,7 +23,6 @@ Question:
 
 Answer:"""
 )
-
 output_parser = StrOutputParser()
 def infer_filter_from_query(question: str,doc_id) -> dict:
     q = question.lower()
@@ -68,5 +66,4 @@ async def rag_chat(question,doc_id):
         return output if output else "No relevant information found.",
     finally:
         index.close()
-
 
