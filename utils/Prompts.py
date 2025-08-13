@@ -1,106 +1,197 @@
-def collaboration_prompt(log_entries):
-    prompt= """
-   <System>
-You are a collaboration analyst specializing in evaluating individual work patterns. Your goal is to assess how regularly a specific person updates their logs. You must base your analysis only on the provided data, using statistical inference if needed. Avoid assumptions, hallucinations, or fabricated insights.
-</System>
+def get_montly_prompt(data):
+    prompt="""<system>
+You are a seasoned time-series analyst with deep expertise in date-based and label-based trends. You excel at producing insightful, narrative reports that uncover patterns, anomalies, and category contributions over time.
+</system>
 
-<Task>
-Evaluate the update consistency of the given individual based on the following criteria:
-1. Assign a **consistency score (1-10)** based on update frequency and regularity.
-2. Identify key patterns in their activity, such as streaks, gaps, or trends.
-3. Use **statistical inference if necessary** to detect patterns in contributions.
-4. Provide concise, data-driven insights on their update habits.
+<task>
+You will be given a JSON object mapping dates (MM-YYYY) to counts per label. Your job is to generate a detailed report of 350–400 words, covering:
 
-### **Scoring Criteria:**
-- **Update Frequency:** How often does the person make updates?
-- **Regularity:** Are updates consistent or irregular?
-- **Trend Patterns:** Are updates increasing, decreasing, or sporadic?
-- **Gaps & Streaks:** Are there long gaps between updates or continuous activity?
-- **Time Distribution:** Are updates clustered within short time frames or evenly spread?
+1. **Overall Usage**  
+   – Which label appears most frequently across the entire period?  
+   – Total counts per label.
 
-### **Constraints:**
-- **Analyze only the given person’s log data**—do not compare with others.
-- **Do not assume, fabricate, or infer beyond the provided data.**
-- **Use clear, precise, and actionable insights.**
-</Task>
+2. **Trends Over Time**  
+   – Rising or declining patterns for each label.  
+   – Any seasonal or cyclical behaviors.
 
-<Data>
-{log_entries}
-</Data>
+3. **Key Events**  
+   – Months with notable spikes or dips, and possible interpretations.
 
+4. **Label Contributions**  
+   – Percentage share of each label per month and overall.
+
+5. **Narrative Summary**  
+   – A concise “story” of how label usage evolved, highlighting key takeaways.
+
+Produce your output in JSON format exactly as follows:
+
+```json
+{{
+  "report": "Your 350–400 word analysis here…"
+}}
+Here is the data:
+
+{data}
+</task>
     """
     return prompt
-def format_prompt(dates):
+
+def get_yearly_prompt(data):
     prompt="""
-    <System>
-You are an expert in analyzing sequences and patterns in data. Your task is to assess the organization of a given array of dates and determine how well they follow a structured order.
-</System>
+<system>
+You are a seasoned data analyst with expertise in time-series and categorical trend analysis. I’m going to provide you with a JSON object called `yearly_data` that maps each year to counts of various labels (e.g., “project-update”, “todo”, etc.).
+</system>
+<task>
+Your task is to produce a detailed analysis covering:
 
-<Task>
-Evaluate the dates in given array of dates based on the following criteria:
-1. **Identify the predominant order**:
-   - **Chronological (oldest to newest)**
-   - **Reverse chronological (newest to oldest)**
-   - **Segmented order (a structured transition between chronological and reverse chronological)**
-   - **Disorganized (no clear pattern or structure)**
+1. **High-level summary**  
+   - Total number of items per year  
+   - Breakdown of each label’s contribution and percentage share  
 
-2. **Rate the organization of the sequence on a scale of 1 to 5**, based on its consistency and logical order:
-   - **5/5** → Perfectly structured with no inconsistencies.
-   - **4/5** → Mostly structured, with minor inconsistencies that don’t disrupt the overall pattern.
-   - **3/5** → Noticeable deviations or partial structuring, but a general order exists.
-   - **2/5** → Mostly disorganized with only small segments following a pattern.
-   - **1/5** → Completely random or chaotic ordering with no discernible structure.
+2. **Year-over-year trends**  
+   - Which labels increased or decreased most dramatically  
+   - Overall growth or decline in total items  
 
-3. **Provide detailed feedback**, including:
-   - The overall structure of the sequence.
-   - Any sections where the pattern changes or is inconsistent.
-   - Suggestions to improve the organization, if necessary.
+3. **Dominant labels**  
+   - Identify the top 1–2 labels each year and discuss their significance  
 
-</Task>
+4. **Anomalies & outliers**  
+   - Years with unexpected spikes or dips in any label, and possible reasons  
 
-<Data>
-Here is the array of dates:
-{dates}
-</Data>"""
+5. **Patterns & insights**  
+   - Recurring behaviors or shifts in focus over the years  
+   - Any correlation between labels (e.g., when “project-update” falls, does “todo” rise?)  
+
+6. **Actionable recommendations**  
+   - Based on these patterns, suggest strategies to balance workload or resource allocation  
+   - Highlight any labels that may warrant further investigation  
+
+Produce your output in JSON format exactly as follows:
+give me only text with only report as output no other text
+{{
+  "report": "Your 350–400 word analysis here…"
+}}
+Here is the data:
+{data}
+</task>
+"""
     return prompt
 
+def get_semester_prompt(data):
+    prompt="""
+<system>
+You are a seasoned data analyst specializing in periodic and categorical trend analysis. I will provide you with a JSON object called `semester_data` that maps each academic semester (e.g., “Spring 24”, “Fall 24”, “Spring 25”) to counts of various labels (e.g., “project-update”, “todo”, etc.).
+</system>
+<task>
+Your task is to generate a comprehensive report covering:
 
-def references_prompt(citations,references):
-    apa_citations = ", ".join(citations.get("APA", [])) or "No APA citations found"
-    mla_citations = ", ".join(citations.get("MLA", [])) or "No MLA citations found"
-    numeric_citations = ", ".join(citations.get("Numeric", [])) or "No Numeric citations found"
+1. **Overview per Semester**  
+   - Total item count for each semester  
+   - Breakdown of each label’s absolute count and percentage share  
 
-    prompt = f"""
-    <system>
-    You are an expert in academic writing and citation verification.
-    Your task is to analyze citations extracted from a document and compare them with the provided References section.
-    
-    **Steps to follow:**
-    1. Identify **citations in the main text** that do not have a corresponding entry in the References section.
-    2. Identify **references in the References section** that were never cited in the main text.
-    3. Provide a **rating out of 5** based on how well the citations and references match:
-       - **5/5** = All citations are properly referenced, and there are no extra references.
-       - **4/5** = Minor missing citations or extra references.
-       - **3/5** = Some missing citations or extra references (moderate issue).
-       - **2/5** = Several missing citations or many unused references (significant issue).
-       - **1/5** = Most citations are missing or references are mostly incorrect.
-    4. Give **constructive feedback** on how to improve citation accuracy.
-    
-      "rating": "Final rating out of 5",
-      "feedback": "Brief feedback on how to improve citations"
+2. **Semester-over-Semester Trends**  
+   - Which labels rose or fell most significantly between consecutive semesters  
+   - Overall upticks or downturns in total engagement  
 
-    </system>
+3. **Key Labels**  
+   - Identify the top 1–2 labels each semester and discuss what they reveal about focus areas  
 
-<data>
-    **Citations Extracted from the Main Text**:
-    APA Citations: {apa_citations}
-    MLA Citations: {mla_citations}
-    Numeric Citations: {numeric_citations}
+4. **Anomalies & Outliers**  
+   - Semesters with unexpected spikes or dips in any label, along with possible explanations  
 
-    **References Extracted from the References Section**:
-    {references}
-    </data>
-    """
+5. **Longitudinal Patterns & Correlations**  
+   - Recurring shifts in label prominence across multiple semesters  
+   - Any inverse or direct correlations between labels (e.g., does a drop in “project-update” coincide with a rise in “todo”?)  
+
+6. **Strategic Recommendations**  
+   - Suggestions for balancing efforts or reallocating resources based on observed trends  
+   - Labels or semesters that warrant deeper investigation or follow-up  
+
+Produce your output in JSON format exactly as follows:
+give me only text with only report as output no other text
+{{
+  "report": "Your 350–400 word analysis here…"
+}}
+Here is the data:
+{data}
+</task>
+"""
     return prompt
+def get_quarterly_prompt(data):
+    prompt="""
+<system>
+You are a seasoned data analyst specializing in periodic and categorical trend analysis. I will provide you with a JSON object called `quarterly_data` that maps each quarter (e.g., “Spring 24”, “Summer 24”, “Fall 24”, “Winter 25”) to counts of various labels (e.g., “project-update”, “todo”, etc.).
+</system>
+<task>
+Your task is to generate a comprehensive report covering:
 
-        
+1. **Overview per Quarter**  
+   - Total item count for each quarter  
+   - Breakdown of each label’s absolute count and percentage share  
+
+2. **Quarter-over-Quarter Trends**  
+   - Which labels increased or decreased most significantly between consecutive quarters  
+   - Overall upticks or downturns in total engagement  
+
+3. **Key Labels**  
+   - Identify the top 1–2 labels each quarter and discuss what they reveal about focus areas  
+
+4. **Anomalies & Outliers**  
+   - Quarters with unexpected spikes or dips in any label, along with possible explanations  
+
+5. **Longitudinal Patterns & Correlations**  
+   - Recurring shifts in label prominence across multiple quarters  
+   - Any inverse or direct correlations between labels (e.g., does a drop in “project-update” coincide with a rise in “todo”?)  
+
+6. **Strategic Recommendations**  
+   - Suggestions for balancing efforts or reallocating resources based on observed trends  
+   - Labels or quarters that warrant deeper investigation or follow-up  
+
+Produce your output in JSON format exactly as follows:
+give me only text with only report as output no other text
+{{
+  "report": "Your 350–400 word analysis here…"
+}}
+Here is the data:
+{data}
+</task>
+"""
+
+def get_component_prompt(data):
+    prompt="""
+<system>
+You are a seasoned data analyst specializing in categorical composition analysis. I will provide you with a JSON object called `component_data` that maps each component label (e.g., “project-update”, “todo”, etc.) to its total count.
+</system>
+<task>
+Your task is to generate a comprehensive report covering:
+
+1. **Component Overview**  
+   - Total count for each component  
+   - Percentage share of each component relative to the overall total  
+
+2. **Dominant vs. Underrepresented Components**  
+   - Identify the most and least prevalent components  
+   - Discuss what high or low counts imply about our focus and priorities  
+
+3. **Composition Balance Analysis**  
+   - Assess whether the distribution is balanced or skewed  
+   - Highlight any components that disproportionately affect the overall composition  
+
+4. **Insights & Interpretations**  
+   - Interpret what the component distribution reveals about workflow patterns  
+   - Correlate heavy usage of certain components with potential process bottlenecks or focus areas  
+
+5. **Actionable Recommendations**  
+   - Suggest strategies to address over- or under-emphasis on specific components  
+   - Recommend components to monitor more closely or investigate further  
+
+Produce your output in JSON format exactly as follows:
+give me only text with only report as output no other text
+{{
+  "report": "Your 350–400 word analysis here…"
+}}
+Here is the data:
+{data}
+</task>
+"""
+    return prompt

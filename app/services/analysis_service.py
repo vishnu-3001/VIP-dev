@@ -33,14 +33,27 @@ async def get_date_label_data(file_id):
         yearly_data,monthly_data=group_data(converted_dict)
         semester_data,quarterly_data=academic_year_data(converted_dict)
         component_data=component_wise_data(converted_dict)
+        report=await get_date_analysis(monthly_data,"monthly")
+        yearly_report = await get_date_analysis(yearly_data, "yearly")
+        semester_report = await get_date_analysis(semester_data, "semester")
+        # quarterly_report = await get_date_analysis(quarterly_data, "quarterly")
+        # component_report = await get_date_analysis(component_data, "component")
         response={
             "yearly_data":yearly_data,
             "monthly_data":monthly_data,
-            "report":"",
             "semester_data":semester_data,
             "quarterly_data":quarterly_data,
-            "component_data":component_data
+            "component_data":component_data,
+            "monthly_report":report,
+            "yearly_report":yearly_report,
+            "semester_report":semester_report
+            # "quarterly_report":quarterly_report
+            # "component_report":component_report
         }
+        update_query="""
+            UPDATE documents SET processed_data = %s WHERE document_id = %s"""
+        cursor.execute(update_query, (json.dumps(response), file_id))
+        conn.commit()
         return response
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"Database error:{str(e)}")
@@ -49,24 +62,19 @@ async def get_date_label_data(file_id):
         if db_pool:
             db_pool.putconn(conn)
 
-async def get_date_analysis(data):
+async def get_date_analysis(data,type):
     llm=model()
-    prompt="""
-    <system>
-    you are an expert in time series analysis who specilaizes in date and label anaylsis and you can give excellent report
-    about them
-    <system>
-    <task>
-    you are provided with a date and label analysis in json format your task is to give a detailed report in 350-400 words
-    about your findings on that data like, which label is most used and what is the trend that you have seen in the lables,what
-    is the contribution to different labels in the data over the time.
-    {data}
-    give me the report in json format with the following keys
-    {{
-        "report":"lorem ipsum dolor sit amet....",
-    }}
-    <task>
-    """
+    match type:
+        case "monthly":
+            prompt=get_montly_prompt(data)
+        case "yearly":
+            prompt=get_yearly_prompt(data)
+        case "semester":
+            prompt=get_semester_prompt(data)
+        case "quarterly":
+            prompt=get_quarterly_prompt(data)
+        case "component":
+            prompt=get_component_prompt(data)
     prompt_template=PromptTemplate(template=prompt,input_variables=["data"])
     chain=prompt_template | llm
     response=await chain.ainvoke({"data":data})
