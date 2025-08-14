@@ -35,7 +35,9 @@ async def get_date_label_data(file_id):
         component_data=component_wise_data(converted_dict)
         report=await get_date_analysis(monthly_data,"monthly")
         yearly_report = await get_date_analysis(yearly_data, "yearly")
+        # print("yearly report:",yearly_report)
         semester_report = await get_date_analysis(semester_data, "semester")
+        # print("semester report:",semester_report)
         # quarterly_report = await get_date_analysis(quarterly_data, "quarterly")
         # component_report = await get_date_analysis(component_data, "component")
         response={
@@ -79,8 +81,8 @@ async def get_date_analysis(data,type):
     chain=prompt_template | llm
     response=await chain.ainvoke({"data":data})
     output = response.content.strip().lower() if hasattr(response, "content") else response.strip().lower()
-    output=json.loads(output)
-    return output["report"]
+    # output=json.loads(output)
+    return output
 
 
 def group_data(converted_dict):
